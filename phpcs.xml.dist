@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<ruleset name="WordPressPlugin">
+  <description>Basic WordPress plugin coding standards.</description>
+  <rule ref="WordPress-Extra"/>
+  <rule ref="WordPress-Docs"/>
+  <config name="testVersion" value="7.4-"/>
+  <arg name="extensions" value="php"/>
+  <file>./</file>
+  <exclude-pattern>*/vendor/*</exclude-pattern>
+  <exclude-pattern>*/node_modules/*</exclude-pattern>
+  <exclude-pattern>*/assets/*</exclude-pattern>
+  <exclude-pattern>*/assets-wporg/*</exclude-pattern>
+  <exclude-pattern>*/tools/*</exclude-pattern>
+  <exclude-pattern>*/.github/*</exclude-pattern>
+</ruleset>

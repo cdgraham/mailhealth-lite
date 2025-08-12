@@ -1,0 +1,96 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set env vars
+        id: vars
+        run: |
+          echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+          if [[ "mailhealth-lite" == *"-lite" ]]; then
+            echo "IS_LITE=true" >> $GITHUB_OUTPUT
+          else
+            echo "IS_LITE=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.1'
+          tools: composer:v2
+
+      - name: Install dev tools (PHPCS)
+        run: |
+          composer install --no-interaction --prefer-dist
+
+      - name: Run PHPCS
+        run: vendor/bin/phpcs
+
+      - name: Bump version (optional)
+        run: |
+          php tools/bump-version.php ${{ steps.vars.outputs.VERSION }} mailhealth-lite
+        continue-on-error: true
+
+      - name: Build zip
+        run: |
+          chmod +x tools/build-zip.sh
+          if [[ "${{ steps.vars.outputs.IS_LITE }}" == "true" ]]; then
+            SLUG=mailhealth-lite VERSION=${{ steps.vars.outputs.VERSION }} ./tools/build-zip.sh
+            echo "ZIP_PATH=../mailhealth-lite-${{ steps.vars.outputs.VERSION }}.zip" >> $GITHUB_ENV
+          else
+            SLUG=mailhealth-lite VERSION=${{ steps.vars.outputs.VERSION }} ./tools/build-zip.sh
+            echo "ZIP_PATH=../mailhealth-lite-${{ steps.vars.outputs.VERSION }}-pro.zip" >> $GITHUB_ENV
+          fi
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mailhealth-lite-${{ steps.vars.outputs.VERSION }}
+          path: ${{ env.ZIP_PATH }}
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ env.ZIP_PATH }}
+          generate_release_notes: true
+
+      - name: Build SVN export (Lite only)
+        if: steps.vars.outputs.IS_LITE == 'true'
+        run: |
+          chmod +x tools/make-svn-export.sh
+          SLUG=mailhealth-lite VERSION=${{ steps.vars.outputs.VERSION }} ./tools/make-svn-export.sh
+
+      - name: Install Subversion (Lite only)
+        if: steps.vars.outputs.IS_LITE == 'true'
+        run: sudo apt-get update && sudo apt-get install -y subversion rsync
+
+      - name: Check out SVN (Lite only)
+        if: steps.vars.outputs.IS_LITE == 'true'
+        run: svn co "https://plugins.svn.wordpress.org/mailhealth-lite/" svn
+
+      - name: Rsync trunk/tag/assets (Lite only)
+        if: steps.vars.outputs.IS_LITE == 'true'
+        run: |
+          rsync -av --delete "svn-mailhealth-lite-${{ steps.vars.outputs.VERSION }}/trunk/" "svn/trunk/"
+          mkdir -p "svn/tags/${{ steps.vars.outputs.VERSION }}"
+          rsync -av --delete "svn-mailhealth-lite-${{ steps.vars.outputs.VERSION }}/tags/${{ steps.vars.outputs.VERSION }}/" "svn/tags/${{ steps.vars.outputs.VERSION }}/"
+          rsync -av --delete "svn-mailhealth-lite-${{ steps.vars.outputs.VERSION }}/assets/" "svn/assets/"
+
+      - name: Commit to WordPress.org SVN (Lite only)
+        if: steps.vars.outputs.IS_LITE == 'true'
+        env:
+          WPORG_USERNAME: ${{ secrets.WPORG_USERNAME }}
+          WPORG_PASSWORD: ${{ secrets.WPORG_PASSWORD }}
+        run: |
+          cd svn
+          svn add --force . || true
+          svn status
+          svn ci -m "Release mailhealth-lite ${{ steps.vars.outputs.VERSION }}" --username "$WPORG_USERNAME" --password "$WPORG_PASSWORD" --no-auth-cache --non-interactive

@@ -1,0 +1,7 @@
+# build artifacts
+*.zip
+.DS_Store
+.idea/
+.vscode/
+node_modules/
+vendor/
