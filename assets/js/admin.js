@@ -8,4 +8,11 @@
       .fail(function(xhr){ alert((xhr.responseJSON && xhr.responseJSON.data && xhr.responseJSON.data.message) || 'Failed'); })
       .always(function(){ $b.prop('disabled', false).text('Send Test'); });
   });
+
+  $(document).on("click", ".mailhealth-lite-upgrade .notice-dismiss", function () {
+    $.post(MHLAjax.ajaxurl, {
+        action: "mailhealth_lite_dismiss_upgrade",
+        _ajax_nonce: MHLAjax.nonce,
+    });
+  });
 })(jQuery);

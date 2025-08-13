@@ -79,7 +79,13 @@ class Routes {
 		if ( ! isset( $_GET['_wpnonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( $_GET['_wpnonce'] ) ), 'wp_rest' ) ) {
 			return new \WP_Error( 'invalid_nonce', __( 'Nonce is invalid.', 'mailhealth-lite' ), array( 'status' => 403 ) );
 		}
-		$domain = sanitize_text_field( $_GET['domain'] ?? wp_parse_url( home_url(), PHP_URL_HOST ) );
+		$domain = wp_unslash( $_GET['domain'] ?? '' );
+		if ( empty( $domain ) ) {
+			$domain = wp_parse_url( home_url(), PHP_URL_HOST );
+		}
+		if ( ! preg_match( '/^([a-z0-9]+(-[a-z0-9]+)*\.)+[a-z]{2,}$/i', $domain ) ) {
+			return new \WP_Error( 'invalid_domain', __( 'Invalid domain format.', 'mailhealth-lite' ), array( 'status' => 400 ) );
+		}
 		$spf    = self::spf( $domain );
 		$dmarc  = self::dmarc( $domain );
 		return array(
