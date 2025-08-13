@@ -237,10 +237,5 @@ class Menu {
 			'<div class="notice notice-info is-dismissible mailhealth-lite-upgrade"><p><strong>Need monitoring & alerts?</strong> MailHealth Pro adds scheduled canary tests, Slack/Webhook alerts, and blacklist checks. <a class="button button-primary" target="_blank" href="%s">Upgrade to Pro</a></p></div>',
 			esc_url( $url )
 		);
-		// Inline script to mark dismissed.
-		printf(
-			'<script>jQuery(function($){$(document).on("click",".mailhealth-lite-upgrade .notice-dismiss",function(){jQuery.post(ajaxurl,{action:"mailhealth_lite_dismiss_upgrade",_ajax_nonce:"%s"});});});</script>',
-			esc_attr( wp_create_nonce( 'mh_lite_ajax' ) )
-		);
 	}
 }
