@@ -1,4 +1,4 @@
-=== MailHealth Lite – SMTP, DMARC, SPF Email Deliverability Checker ===
+=== MailHealth Lite – SMTP & Deliverability Monitor ===
 Contributors: yourname
 Tags: smtp, email, deliverability, dmarc, spf, wordpress email not sending, wp_mail, gmail smtp, office 365 smtp
 Requires at least: 6.3

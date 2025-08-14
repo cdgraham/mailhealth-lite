@@ -1,12 +1,18 @@
 {
-  "name": "chris/mailhealth-lite",
-  "description": "MailHealth Lite — dev autoload only",
+  "name": "chillichalli/mailhealth-lite",
+  "description": "MailHealth Lite – SMTP, DMARC, SPF Email Deliverability Checker",
   "type": "wordpress-plugin",
-  "license": "proprietary",
+  "license": "GPL-2.0-or-later",
   "autoload": {
     "psr-4": {
-      "MailHealthLite\": "src/"
+      "MailHealthLite\\": "src/"
     }
   },
-  "require": {}
+  "require": {},
+  "require-dev": {
+    "wp-coding-standards/wpcs": "^3.0"
+  },
+  "scripts": {
+    "lint": "phpcs --standard=phpcs.xml.dist"
+  }
 }

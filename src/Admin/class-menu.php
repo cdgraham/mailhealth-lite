@@ -20,14 +20,7 @@ class Menu {
 	public static function init(): void {
 		add_action( 'admin_menu', array( __CLASS__, 'register' ) );
 		add_action( 'admin_notices', array( __CLASS__, 'upgrade_notice' ) );
-		add_action(
-			'wp_ajax_mailhealth_lite_dismiss_upgrade',
-			function () {
-				check_ajax_referer( 'mh_lite_ajax' );
-				update_user_meta( get_current_user_id(), 'mailhealth_lite_dismiss_upgrade', 1 );
-				wp_die( 'ok' );
-			}
-		);
+		add_action( 'wp_ajax_mailhealth_lite_dismiss_upgrade', array( __CLASS__, 'ajax_dismiss_upgrade' ) );
 		add_action( 'admin_init', array( __CLASS__, 'register_settings' ) );
 		add_action( 'admin_enqueue_scripts', array( __CLASS__, 'enqueue' ) );
 		add_action( 'wp_ajax_mailhealth_lite_send_test', array( __CLASS__, 'ajax_send_test' ) );
@@ -51,14 +44,7 @@ class Menu {
 	 */
 	public static function register_settings(): void {
 		register_setting( 'mailhealth_lite_settings', 'mailhealth_lite_settings', array( 'sanitize_callback' => array( __CLASS__, 'sanitize' ) ) );
-		add_settings_section(
-			'mh_main',
-			'SMTP Settings',
-			function () {
-				echo '<p>Configure SMTP and use the “Send Test” button to verify.</p>';
-			},
-			'mailhealth-lite'
-		);
+		add_settings_section( 'mh_main', 'SMTP Settings', array( __CLASS__, 'render_settings_section' ), 'mailhealth-lite' );
 		$fields = array(
 			array( 'enabled', 'checkbox', 'Enable SMTP override' ),
 			array( 'host', 'text', 'SMTP Host' ),
@@ -79,31 +65,42 @@ class Menu {
 			array( 'from', 'email', 'From Email' ),
 			array( 'from_name', 'text', 'From Name' ),
 		);
-		foreach ( $fields as $f ) {
+		foreach ( $fields as $field_args ) {
 			add_settings_field(
-				'mh_' . $f[0],
-				esc_html( $f[2] ),
-				function () use ( $f ) {
-					$o    = get_option( 'mailhealth_lite_settings', array() );
-					$key  = $f[0];
-					$type = $f[1];
-					$val  = $o[ $key ] ?? ( $f[3] ?? '' );
-					if ( 'checkbox' === $type ) {
-						printf( '<label><input type="checkbox" name="mailhealth_lite_settings[%s]" value="1" %s/> %s</label>', esc_attr( $key ), checked( ! empty( $val ), true, false ), 'Enable' );
-					} elseif ( 'select' === $type ) {
-						$choices = $f[4] ?? array();
-						echo '<select name="mailhealth_lite_settings[' . esc_attr( $key ) . ']">';
-						foreach ( $choices as $k => $lab ) {
-							printf( '<option value="%s" %s>%s</option>', esc_attr( $k ), selected( $val, $k, false ), esc_html( $lab ) );
-						}
-						echo '</select>';
-					} else {
-						printf( '<input type="%s" name="mailhealth_lite_settings[%s]" value="%s" class="regular-text" />', esc_attr( $type ), esc_attr( $key ), esc_attr( $val ) );
-					}
-				},
+				'mh_' . $field_args[0],
+				esc_html( $field_args[2] ),
+				array( __CLASS__, 'render_settings_field' ),
 				'mailhealth-lite',
-				'mh_main'
+				'mh_main',
+				$field_args
 			);
+		}
+	}
+
+	/**
+	 * Render a settings field.
+	 *
+	 * @param array $args Field arguments.
+	 * @return void
+	 */
+	private static function render_settings_field( $args ) {
+		$options = get_option( 'mailhealth_lite_settings', array() );
+		$key     = $args[0];
+		$type    = $args[1];
+		$default = $args[3] ?? '';
+		$value   = $options[ $key ] ?? $default;
+
+		if ( 'checkbox' === $type ) {
+			printf( '<label><input type="checkbox" name="mailhealth_lite_settings[%s]" value="1" %s/> %s</label>', esc_attr( $key ), checked( ! empty( $value ), true, false ), 'Enable' );
+		} elseif ( 'select' === $type ) {
+			$choices = $args[4] ?? array();
+			echo '<select name="mailhealth_lite_settings[' . esc_attr( $key ) . ']">';
+			foreach ( $choices as $k => $label ) {
+				printf( '<option value="%s" %s>%s</option>', esc_attr( $k ), selected( $value, $k, false ), esc_html( $label ) );
+			}
+			echo '</select>';
+		} else {
+			printf( '<input type="%s" name="mailhealth_lite_settings[%s]" value="%s" class="regular-text" />', esc_attr( $type ), esc_attr( $key ), esc_attr( $value ) );
 		}
 	}
 
@@ -136,7 +133,7 @@ class Menu {
 		if ( false === strpos( $hook, 'mailhealth-lite' ) ) {
 			return;
 		}
-		wp_enqueue_script( 'mailhealth-lite-admin', plugins_url( 'assets/js/admin.js', dirname( __DIR__, 1 ) ), array( 'jquery' ), '0.9.0', true );
+		wp_enqueue_script( 'mailhealth-lite-admin', plugins_url( 'assets/js/admin.js', dirname( __DIR__, 1 ) ), array( 'jquery' ), MAILHEALTH_LITE_VERSION, true );
 		wp_localize_script(
 			'mailhealth-lite-admin',
 			'MHLAjax',
@@ -145,7 +142,7 @@ class Menu {
 				'nonce'   => wp_create_nonce( 'mh_lite_ajax' ),
 			)
 		);
-		wp_enqueue_style( 'mailhealth-lite', plugins_url( 'assets/css/admin.css', dirname( __DIR__, 1 ) ), array(), '0.9.0' );
+		wp_enqueue_style( 'mailhealth-lite', plugins_url( 'assets/css/admin.css', dirname( __DIR__, 1 ) ), array(), MAILHEALTH_LITE_VERSION );
 	}
 
 	/**
@@ -174,7 +171,7 @@ class Menu {
 	 */
 	public static function render_dns() {
 		echo '<div class="wrap"><h1>DNS Checks</h1><div id="mailhealth-dns-root"><em>Loading...</em></div>';
-		wp_enqueue_script( 'mailhealth-lite-dns', plugins_url( 'assets/js/dns.js', dirname( __DIR__, 1 ) ), array( 'jquery' ), '0.9.0', true );
+		wp_enqueue_script( 'mailhealth-lite-dns', plugins_url( 'assets/js/dns.js', dirname( __DIR__, 1 ) ), array( 'jquery' ), MAILHEALTH_LITE_VERSION, true );
 		echo '</div>';
 	}
 
@@ -188,6 +185,15 @@ class Menu {
 	}
 
 	/**
+	 * Render settings section
+	 *
+	 * @return void
+	 */
+	public static function render_settings_section() {
+		echo '<p>Configure SMTP and use the “Send Test” button to verify.</p>';
+	}
+
+	/**
 	 * Ajax handler for sending a test email
 	 *
 	 * @return void
@@ -197,7 +203,12 @@ class Menu {
 		if ( ! current_user_can( 'manage_options' ) ) {
 			wp_send_json_error( array( 'message' => 'Unauthorized' ), 403 );
 		}
-		$to = sanitize_email( $_POST['to'] ?? get_option( 'admin_email' ) );
+
+		$to = filter_input( INPUT_POST, 'to', FILTER_SANITIZE_EMAIL );
+		if ( empty( $to ) ) {
+			$to = get_option( 'admin_email' );
+		}
+
 		$t0 = microtime( true );
 		$ok = wp_mail( $to, '[MailHealth Lite] Test', 'Ping ' . gmdate( 'c' ) );
 		$ms = (int) round( ( microtime( true ) - $t0 ) * 1000 );
@@ -213,6 +224,17 @@ class Menu {
 		} else {
 			wp_send_json_error( array( 'message' => 'Failed' ), 500 );
 		}
+	}
+
+	/**
+	 * Ajax handler for dismissing the upgrade notice
+	 *
+	 * @return void
+	 */
+	public static function ajax_dismiss_upgrade() {
+		check_ajax_referer( 'mh_lite_ajax' );
+		update_user_meta( get_current_user_id(), 'mailhealth_lite_dismiss_upgrade', 1 );
+		wp_die( 'ok' );
 	}
 
 	/**
