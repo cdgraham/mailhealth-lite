@@ -69,6 +69,7 @@ class Logger {
 			),
 			$row
 		);
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 		$wpdb->insert( self::table(), $row );
 	}
 
