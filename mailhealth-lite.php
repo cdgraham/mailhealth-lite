@@ -32,6 +32,37 @@ spl_autoload_register(
 	}
 );
 
+// Fallback autoloader to also support class-*.php files under src/
+spl_autoload_register(function ($class) {
+    $prefix = 'MailHealthLite\\';
+    if (strpos($class, $prefix) !== 0) {
+        return;
+    }
+    $rel  = substr($class, strlen($prefix));            // e.g. Admin\Menu
+    $base = __DIR__ . '/src/';
+
+    // PSR-4 first (Admin/Menu.php)
+    $psr = $base . str_replace('\\', '/', $rel) . '.php';
+    if (file_exists($psr)) {
+        require_once $psr;
+        return;
+    }
+
+    // WordPress-style fallback (Admin/class-menu.php)
+    $parts = explode('\\', $rel);
+    $cls   = array_pop($parts);
+    $dir   = implode('/', $parts);
+    $alt   = rtrim($base . $dir, '/');
+    if ($alt !== '') {
+        $alt .= '/';
+    }
+    $alt  .= 'class-' . strtolower($cls) . '.php';
+    if (file_exists($alt)) {
+        require_once $alt;
+        return;
+    }
+});
+
 add_action(
 	'plugins_loaded',
 	function () {

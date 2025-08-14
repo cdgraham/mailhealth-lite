@@ -1,20 +1,12 @@
 {
-  "require-dev": {
-    "squizlabs/php_codesniffer": "^3.10",
-    "wp-coding-standards/wpcs": "^3.0"
-  },
-  "scripts": {
-    "phpcs": "phpcs -q"
-  },
-  "config": {
-    "allow-plugins": {
-      "dealerdirect/phpcodesniffer-composer-installer": true
+  "name": "chris/mailhealth-lite",
+  "description": "MailHealth Lite — dev autoload only",
+  "type": "wordpress-plugin",
+  "license": "proprietary",
+  "autoload": {
+    "psr-4": {
+      "MailHealthLite\": "src/"
     }
   },
-  "require": {
-    "dealerdirect/phpcodesniffer-composer-installer": "^1.0"
-  },
-  "extra": {
-    "phpcodesniffer-search-depth": 6
-  }
+  "require": {}
 }
