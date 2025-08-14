@@ -18,21 +18,10 @@ if ( ! defined( 'ABSPATH' ) ) {
 	exit;
 }
 
-// Simple autoloader.
-spl_autoload_register(
-	function ( $class_name ) {
-		if ( strpos( $class_name, 'MailHealthLite\\' ) !== 0 ) {
-			return;
-		}
-		$path = __DIR__ . '/src/' . str_replace( 'MailHealthLite\\', '', $class_name );
-		$path = str_replace( '\\', '/', $path ) . '.php';
-		if ( file_exists( $path ) ) {
-			require_once $path;
-		}
-	}
-);
+define( 'MAILHEALTH_LITE_VERSION', '0.9.0' );
+define( 'MAILHEALTH_LITE_SLUG', 'mailhealth-lite' );
 
-// Fallback autoloader to also support class-*.php files under src/
+// Autoloader to support PSR-4 and WordPress-style class names.
 spl_autoload_register(function ($class) {
     $prefix = 'MailHealthLite\\';
     if (strpos($class, $prefix) !== 0) {
