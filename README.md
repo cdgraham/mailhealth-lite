@@ -2,7 +2,7 @@
 Contributors: yourname
 Tags: smtp, email, deliverability, dmarc, spf, wordpress email not sending, wp_mail, gmail smtp, office 365 smtp
 Requires at least: 6.3
-Tested up to: 6.6
+Tested up to: 6.8
 Requires PHP: 7.4
 Stable tag: 0.9.0
 License: GPLv2 or later
