@@ -7,7 +7,7 @@ rm -rf "$OUT_DIR"
 mkdir -p "$OUT_DIR/trunk" "$OUT_DIR/tags/${VERSION}" "$OUT_DIR/assets"
 
 # Copy plugin files to trunk and tag
-rsync -a --delete ./ "$OUT_DIR/trunk/"   --exclude '.git' --exclude '.github' --exclude 'tools' --exclude 'assets-wporg' --exclude '*.zip'
+rsync -a --delete ./ "$OUT_DIR/trunk/" --exclude 'vendor/dealerdirect' --exclude 'vendor/phpcsstandards' --exclude 'vendor/squizlabs' --exclude 'vendor/wp-coding-standards' --exclude 'phpcs.xml.dist'  --exclude '.git*' --exclude $OUT_DIR --exclude 'tools' --exclude 'assets-wporg' --exclude '*.zip'
 rsync -a --delete "$OUT_DIR/trunk/" "$OUT_DIR/tags/${VERSION}/"
 
 # Copy wp.org assets (banners/icons/screenshots) to SVN /assets
