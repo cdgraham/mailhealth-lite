@@ -1,6 +1,6 @@
 <?php
 /**
- * Plugin Name: MailHealth Lite – SMTP & Deliverability Monitor
+ * Plugin Name: MailHealth Lite
  * Description: Lite version: SMTP wizard, manual DNS checks (SPF/DMARC), one-click test email, and a small local log. Upgrade for canary schedules, alerts, blacklist checks, and more.
  * Version: 0.9.0
  * Requires PHP: 7.4

@@ -1,4 +1,4 @@
-=== MailHealth Lite – SMTP & Deliverability Monitor ===
+=== MailHealth Lite ===
 Contributors: ChilliChalli
 Tags: smtp, email, deliverability, dmarc, spf
 Requires at least: 6.3
