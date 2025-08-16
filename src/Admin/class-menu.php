@@ -84,7 +84,7 @@ class Menu {
 	 * @param array $args Field arguments.
 	 * @return void
 	 */
-	private static function render_settings_field( $args ) {
+	public static function render_settings_field( $args ) {
 		$options = get_option( 'mailhealth_lite_settings', array() );
 		$key     = $args[0];
 		$type    = $args[1];
