@@ -1,0 +1,57 @@
+# Forgejo CI for mailhealth-lite, the check main requires: named CI with job id test so
+# "CI / test (pull_request)" matches; keep both names stable.
+# mailhealth-lite had no CI on GitHub (claude-code-action, which retires per
+# PHASE1.md, and a tag-only release.yml; releases go through the
+# release-publisher deploy repo), so this is new: syntax of every tracked PHP,
+# JS, JSON and shell file, then the repo's phpcs ruleset (composer.json script
+# lint) with -n, errors only: current code has 0 errors and 3 warnings.
+# Not run: `composer validate` (composer.lock is out of date with
+# composer.json; composer install still works and says so).
+# Runs on runner-agent in a Debian bookworm LXC job container as root: tools
+# from apt (PHP 8.2, Composer 2.5); Node is the job image's (v24).
+name: CI
+'on':
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: agent
+    timeout-minutes: 15
+    steps:
+      - name: Tools
+        run: apt-get update -qq && apt-get install -y -qq --no-install-recommends git ca-certificates python3 php-cli php-xml php-mbstring php-curl php-zip unzip composer >/dev/null
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - name: PHP syntax (php -l, every tracked .php)
+        run: |
+          git ls-files -z -- '*.php' | xargs -0 -r -n1 php -d display_errors=stderr -l >/dev/null
+          echo "php -l: $(git ls-files -- '*.php' | wc -l) files, no syntax errors"
+      - name: JavaScript syntax (node --check, every tracked .js)
+        run: |
+          git ls-files -z -- '*.js' | xargs -0 -r -n1 node --check
+          echo "node --check: $(git ls-files -- '*.js' | wc -l) files OK"
+      - name: JSON parses (every tracked .json)
+        run: |
+          git ls-files -z -- '*.json' | xargs -0 -r -n1 python3 -m json.tool >/dev/null
+          echo "json: $(git ls-files -- '*.json' | wc -l) files parse"
+      - name: Shell syntax (bash -n, every tracked .sh)
+        run: |
+          git ls-files -z -- '*.sh' | xargs -0 -r -n1 bash -n
+          echo "bash -n: $(git ls-files -- '*.sh' | wc -l) files OK"
+      - name: composer install (composer.lock, with dev tools)
+        env:
+          COMPOSER_ALLOW_SUPERUSER: '1'
+        run: composer install --no-interaction --no-progress
+      - name: PHP_CodeSniffer (the repo's phpcs.xml.dist)
+        run: vendor/bin/phpcs -q -n
